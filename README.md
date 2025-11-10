@@ -9,6 +9,7 @@ Phase 3 builds on the Discussion Board Q&A system, adding the new reviewer role,
 - **Ability for users to request the reviewer role**
 - **Ability for users to private message each other**
 - **Trusted Reviewers System with personalized filtering and management**
+- **Ability for users to create and manage reviews of questions and answers**
 ## New User Stories
 - Reviewers to create, view, update, and delete reviews of questions and potential answers.
 - Reviewers to scan a list of the reviews they wrote, see, and reply to private messages from the authors of questions or answers they have reviewed.
