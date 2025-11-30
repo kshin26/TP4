@@ -18,19 +18,19 @@ public class DiscussionBoardDAO {
 
     //db credentials (from DatabaseHelper)
 
-    // JDBC driver name and database URL 
-	static final String JDBC_DRIVER = "org.h2.Driver";   
-	static final String DB_URL = "jdbc:h2:~/FoundationDatabase";  
+    // JDBC driver name and database URL
+	static final String JDBC_DRIVER = "org.h2.Driver";
+	static final String DB_URL = "jdbc:h2:~/FoundationDatabase";
 
-	//  Database credentials 
-	static final String USER = "sa"; 
-	static final String PASS = ""; 
+	//  Database credentials
+	static final String USER = "sa";
+	static final String PASS = "";
 
     //constructor
     public DiscussionBoardDAO() throws SQLException {
         connectToDatabase();
     }
-    //connect to db 
+    //connect to db
     private void connectToDatabase() throws SQLException {
         try {
             Class.forName(JDBC_DRIVER);
@@ -54,7 +54,7 @@ public class DiscussionBoardDAO {
         "isAnswered BOOLEAN DEFAULT FALSE," +
         "category VARCHAR(100))";
         statement.execute(questionsTable);
-    
+
     //answers table.
     String answersTable = "CREATE TABLE IF NOT EXISTS answers(" +
     "answerId INT AUTO_INCREMENT PRIMARY KEY," +
@@ -64,11 +64,12 @@ public class DiscussionBoardDAO {
     "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
     "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
     "isAccepted BOOLEAN DEFAULT FALSE," +
+    "isCorrect BOOLEAN DEFAULT FALSE," +
     "FOREIGN KEY (questionId) REFERENCES questions(questionId))";
 
     statement.execute(answersTable);
     }
-    //insert a question 
+    //insert a question
     public int createQuestion(Question question) throws SQLException {
         String sql = "INSERT INTO questions (title, content, authorUserName, category) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -93,7 +94,7 @@ public class DiscussionBoardDAO {
             String sql = "SELECT * FROM questions ORDER BY createdAt DESC";
             try (PreparedStatement pstmt = connection.prepareStatement(sql);
                  ResultSet rs = pstmt.executeQuery()) {
-                
+
                 while (rs.next()) {
                     Question q = extractQuestionFromResultSet(rs);
                     questions.addQuestion(q);
@@ -142,17 +143,17 @@ public class DiscussionBoardDAO {
         public int createAnswer(Answer answer) throws SQLException {
             String sql = "INSERT INTO answers (questionId, content, authorUserName, createdAt, updatedAt, isAccepted) "
                     + "VALUES (?, ?, ?, ?, ?, ?)";
-            
+
             try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setInt(1, answer.getQuestionId());
                 pstmt.setString(2, answer.getContent());
-                pstmt.setString(3, answer.getAuthorUserName()); 
+                pstmt.setString(3, answer.getAuthorUserName());
                 pstmt.setTimestamp(4, Timestamp.valueOf(answer.getCreatedAt()));
                 pstmt.setTimestamp(5, Timestamp.valueOf(answer.getUpdatedAt()));
                 pstmt.setBoolean(6, answer.getIsAccepted());
-                
+
                 pstmt.executeUpdate();
-                
+
                 // generate answerId
                 ResultSet rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
@@ -167,11 +168,11 @@ public class DiscussionBoardDAO {
         public Answers getAnswersForQuestion(int questionId) throws SQLException {
             Answers answers = new Answers();
             String sql = "SELECT * FROM answers WHERE questionId = ? ORDER BY isAccepted DESC, createdAt ASC";
-            
+
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                 pstmt.setInt(1, questionId);
                 ResultSet rs = pstmt.executeQuery();
-                
+
                 while (rs.next()) {
                     Answer a = extractAnswerFromResultSet(rs);
                     answers.addAnswer(a);
@@ -194,14 +195,15 @@ public class DiscussionBoardDAO {
         }
         //update an answer
         public boolean updateAnswer(Answer answer) throws SQLException {
-            String sql = "UPDATE answers SET content = ?, updatedAt = ?, isAccepted = ? WHERE answerId = ?";
-            
+            String sql = "UPDATE answers SET content = ?, updatedAt = ?, isAccepted = ?, isCorrect = ? WHERE answerId = ?";
+
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                 pstmt.setString(1, answer.getContent());
                 pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
                 pstmt.setBoolean(3, answer.getIsAccepted());
-                pstmt.setInt(4, answer.getAnswerId());
-                
+                pstmt.setBoolean(4, answer.isCorrect());
+                pstmt.setInt(5, answer.getAnswerId());
+
                 return pstmt.executeUpdate() > 0;
             }
         }
@@ -238,6 +240,7 @@ public class DiscussionBoardDAO {
                 rs.getTimestamp("updatedAt").toLocalDateTime(),
                 rs.getBoolean("isAccepted")
             );
+            a.setCorrect(rs.getBoolean("isCorrect"));
             return a;
         }
 
